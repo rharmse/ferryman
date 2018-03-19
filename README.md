@@ -11,9 +11,14 @@ Ferryman is intended to be a HTTP/HTTPS Loadbalancer with the following features
 * Route failure fallback support.
 * DSL to add routing/rules using configuration.
 * Hot config/rule reloads.
+* Caching of http responses.
+* Support for websockets.
 
 It is currently in development as a pet project.
 
 ## Getting Started
 
 Nothing to see here keep on moving.
+
+##Videos Watched & Articles Ready while learning 
+*
