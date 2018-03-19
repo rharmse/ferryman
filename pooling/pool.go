@@ -14,12 +14,12 @@ type PoolNode struct {
 
 type Pool struct {
 	name       string
-	members    map[string]*PoolNode
+	members    map[string]*PoolNofde
 	httpClient *http.Client
 }
 
 func (pool *Pool) AddPoolNode(hostname string) error {
-	return nil
+
 }
 
 func (pool *Pool) RemovePoolNode(hostname string) error {
