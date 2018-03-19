@@ -3,6 +3,7 @@ package ferryman
 import (
 	"net"
 	"net/http"
+	"time"
 )
 
 type PoolNode struct {
@@ -27,6 +28,7 @@ func (pool *Pool) RemovePoolNode(hostname string) error {
 
 func (pool *Pool) SetupClient() error {
 	pool.httpClient = &http.Client{
+		Timeout: time.Second,
 		Transport: &http.Transport{
 			MaxIdleConns:        len(pool.members) * 110,
 			MaxIdleConnsPerHost: 100}}

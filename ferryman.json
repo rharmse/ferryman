@@ -1,0 +1,48 @@
+{"ferryman" :
+  [{
+  "pool":"vcoza",
+  "httpRoot": "/vodacom/home",
+  "members" :
+  [
+    {"host":"host1",  "port":"port",  "httpRoot": null  },
+    {"host":"host2",  "port":"port",  "httpRoot": null  },
+    {"host":"host3",  "port":"port",  "httpRoot": null  },
+    {"host":"host4",  "port":"port",  "httpRoot": "/vodacom/home/v1"}
+  ]
+  ,
+  "rules":
+    [
+      {
+        "type":"FORWARD",
+        "apply" :
+        [
+          { "from": ["/path/to/forward/from1", "/path/to/forward/from2"], "to": "/path/to/forward/to" },
+          { "from": ["/path/to/forward*"], "to": "/path/to/forward/to"}
+        ]
+      },
+      {
+        "type":"TEMP_REDIRECT",
+        "apply" :
+        [
+          {"from": ["/path/to/redirect/from"], "to": "/path/to/new/resource"},
+          {"from": ["/path/to/redirect*"], "to": "/path/to/new/resource"}
+        ]
+      },
+      {
+        "type":"PERM_REDIRECT",
+        "apply" :
+        [
+          {"from": ["/path/to/redirect/from/perm"], "to": "/path/to/new/resource"},
+          {"from": ["/path/to/redirect*"], "to": "/path/to/new/resource"}
+        ]
+      },
+      {
+        "type":"DROP",
+        "apply" :
+        [
+          {"from": ["/path/to/drop1", "/path/to/drop2*"], to: null}
+        ]
+      }
+    ]
+  }
+]}

@@ -1,7 +1,9 @@
 package main
 
-import "github.com/rharmse/ferryman/pool"
-
 func main() {
-	pool := &ferryman.Pool{}
+
+	// 1. Determine if there is configuration, and load from it
+	// 2. Load Rules
+	// 3. Setup Content Rewrites
+	// 4. Setup server & Clients
 }
