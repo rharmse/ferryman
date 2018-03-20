@@ -1,13 +1,15 @@
 {"ferryman" :
   [{
-  "pool":"vcoza",
-  "httpRoot": "/vodacom/home",
+  "poolName": "MyWebSite",
+  "domain": "www.domain.co.za",
+  "ctxRoot": "",
+  "serveOn": {"hostname":"localhost", "httpPort":80, "httpsPort":null},
   "members" :
   [
-    {"host":"host1",  "port":"port",  "httpRoot": null  },
-    {"host":"host2",  "port":"port",  "httpRoot": null  },
-    {"host":"host3",  "port":"port",  "httpRoot": null  },
-    {"host":"host4",  "port":"port",  "httpRoot": "/vodacom/home/v1"}
+    {"host":"localhost",  "port":"8081",  "relCtxRoot": null  },
+    {"host":"localhost",  "port":"8082",  "relCtxRoot": null  },
+    {"host":"localhost",  "port":"8083",  "relCtxRoot": null  },
+    {"host":"localhost",  "port":"8084",  "relCtxRoot": "/v1" }
   ]
   ,
   "rules":
@@ -40,7 +42,7 @@
         "type":"DROP",
         "apply" :
         [
-          {"from": ["/path/to/drop1", "/path/to/drop2*"], to: null}
+          {"from": ["/path/to/drop1", "/path/to/drop2*"], "to": null}
         ]
       }
     ]
