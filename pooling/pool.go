@@ -3,6 +3,7 @@ package ferryman
 import (
 	"net"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -24,6 +25,9 @@ type PoolNode struct {
 	ip         net.IP
 	port       uint16
 	relCtxRoot string
+	ctxRoot    string
+	nodeURI    string
+	scheme     string
 }
 
 //Represents a container of HTTP Servers serving client requests
@@ -41,8 +45,19 @@ func (pool *Pool) RemovePoolNode(hostname string) error {
 	return nil
 }
 
-func (pool *PoolNode) BuildNodeURI() error {
-	return nil
+
+func (node *PoolNode) GetNodeURI() (string, error) {
+	if node.nodeURI == nil {
+		builder := &strings.Builder{}
+
+		cnt, _ = b.WriteString(node.sheme)
+		cnt, _ = b.WriteString("://")
+		cnt, _ = b.WriteString(ip)
+		cnt, _ = b.WriteString(ctxRoot)
+		cnt, _ = b.WriteString(relCtxRoot)
+		node.nodeURI = b.String()
+	}
+	return node.nodeURI, nil
 }
 
 func (pool *Pool) SetupClient() error {
