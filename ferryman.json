@@ -1,4 +1,4 @@
-{"ferryman" :
+{"ferrymanConf" :
   [{
   "poolName": "MyWebSite",
   "domain": "www.domain.co.za",
@@ -6,45 +6,28 @@
   "serveOn": {"hostname":"localhost", "httpPort":80, "httpsPort":null},
   "members" :
   [
-    {"host":"localhost",  "port":"8081",  "relCtxRoot": null  },
-    {"host":"localhost",  "port":"8082",  "relCtxRoot": null  },
-    {"host":"localhost",  "port":"8083",  "relCtxRoot": null  },
-    {"host":"localhost",  "port":"8084",  "relCtxRoot": "/v1" }
+    {"hostname":"localhost",  "port":"8081",  "relCtxRoot": null  },
+    {"hostname":"localhost",  "port":"8082",  "relCtxRoot": null  },
+    {"hostname":"localhost",  "port":"8083",  "relCtxRoot": null  },
+    {"hostname":"localhost",  "port":"8084",  "relCtxRoot": "/v1" }
+  ],
+  "rewriteRules":
+  [
+    { "fromURI": ["/path/to/forward/from1", "/path/to/forward/from2"], "toURI": "/path/to/forward/to", "regex":false},
+    { "fromURI": ["/path/to/forward.*"], "toURI": "/path/to/forward/to", "regex":true}
+  ],
+  "tempRedirRules":
+  [
+    {"fromURI": ["/path/to/redirect/from"], "toURI": "/path/to/new/resource", "regex":false},
+    {"fromURI": ["/path/to/redirect.*"], "toURI": "/path/to/new/resource", "regex":true}
+  ],
+  "permRedirRules":
+  [
+    {"fromURI": ["/path/to/redirect/from/perm"], "toURI": "/path/to/new/resource", "regex":false},
+    {"fromURI": ["/path/to/redirect.*"], "toURI": "/path/to/new/resource", "regex":true}
+  ],
+  "dropRules":
+  [
+    {"fromURI": ["/path/to/drop1", "/path/to/drop2*"], "toURI": null, "regex":false}
   ]
-  ,
-  "rules":
-    [
-      {
-        "type":"FORWARD",
-        "apply" :
-        [
-          { "from": ["/path/to/forward/from1", "/path/to/forward/from2"], "to": "/path/to/forward/to" },
-          { "from": ["/path/to/forward*"], "to": "/path/to/forward/to"}
-        ]
-      },
-      {
-        "type":"TEMP_REDIRECT",
-        "apply" :
-        [
-          {"from": ["/path/to/redirect/from"], "to": "/path/to/new/resource"},
-          {"from": ["/path/to/redirect*"], "to": "/path/to/new/resource"}
-        ]
-      },
-      {
-        "type":"PERM_REDIRECT",
-        "apply" :
-        [
-          {"from": ["/path/to/redirect/from/perm"], "to": "/path/to/new/resource"},
-          {"from": ["/path/to/redirect*"], "to": "/path/to/new/resource"}
-        ]
-      },
-      {
-        "type":"DROP",
-        "apply" :
-        [
-          {"from": ["/path/to/drop1", "/path/to/drop2*"], "to": null}
-        ]
-      }
-    ]
-  }
-]}
+}]}

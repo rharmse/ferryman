@@ -19,7 +19,7 @@ type NodeDataTracker struct {
 	http5xxCnt uint64
 }
 
-//This represents a HTTP Serving node part of a Resource Pool
+//This represents a upstream HTTP Serving node part of a Resource Pool
 type PoolNode struct {
 	hostname   string
 	ip         net.IP
@@ -30,14 +30,17 @@ type PoolNode struct {
 	scheme     string
 }
 
-//Represents a container of HTTP Servers serving client requests
+//Represents a container of upstream HTTP Servers 
+//serving client requests, will be utilized in a round robin
+//fashion or least busy server
 type Pool struct {
 	name       string
 	members    map[string]*PoolNode
 	httpClient *http.Client
 }
 
-func (pool *Pool) AddPoolNode(hostname string) error {
+
+func LoadPoolNodes(string poolName) error {
 	return nil
 }
 
