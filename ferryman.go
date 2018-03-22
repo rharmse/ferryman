@@ -8,14 +8,14 @@ import (
 
 func main() {
 
-	conf, error := ferryman.LoadConf("/home/rharmse/go/src/github.com/rharmse/ferryman/ferryman.json")
+    conf, error := ferryman.LoadConf("c:/Users/harmseru/go/src/github.com/rharmse/ferryman/ferryman.json")
 	if error == nil {
 		fmt.Printf("%v", conf)
 	} else {
 		panic(error)
 	}
 
-	error = ferryman.WriteConf("/home/rharmse/go/src/github.com/rharmse/ferryman/ferryman2.json", "/home/rharmse/go/src/github.com/rharmse/ferryman/ferryman.json", conf)
+    error = ferryman.WriteConf("c:/Users/harmseru/go/src/github.com/rharmse/ferryman/ferryman2.json", "c:/Users/harmseru/go/src/github.com/rharmse/ferryman/ferryman.json", conf)
 	if error == nil {
 		fmt.Printf("%v", conf)
 	} else {

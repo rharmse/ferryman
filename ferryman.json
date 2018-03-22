@@ -6,9 +6,9 @@
   "serveOn": {"hostname":"localhost", "httpPort":80, "httpsPort":443},
   "members" :
   [
-    {"hostname":"localhost",  "port":8081,  "relCtxRoot": null  },
-    {"hostname":"localhost",  "port":8082,  "relCtxRoot": null  },
-    {"hostname":"localhost",  "port":8083,  "relCtxRoot": null  },
+    {"hostname":"localhost",  "port":8081,  "relCtxRoot": ""  },
+    {"hostname":"localhost",  "port":8082,  "relCtxRoot": ""  },
+    {"hostname":"localhost",  "port":8083,  "relCtxRoot": ""  },
     {"hostname":"localhost",  "port":8084,  "relCtxRoot": "/v1" }
   ],
   "rewriteRules":
@@ -28,6 +28,6 @@
   ],
   "dropRules":
   [
-    {"fromURI": ["/path/to/drop1", "/path/to/drop2*"], "toURI": null, "regex":false}
+    {"fromURI": ["/path/to/drop1", "/path/to/drop2*"], "toURI": "", "regex":false}
   ]
 }]}
