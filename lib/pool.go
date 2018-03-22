@@ -30,7 +30,7 @@ type PoolNode struct {
 	scheme     string
 }
 
-//Represents a container of upstream HTTP Servers 
+//Represents a container of upstream HTTP Servers
 //serving client requests, will be utilized in a round robin
 //fashion or least busy server
 type Pool struct {
@@ -38,7 +38,6 @@ type Pool struct {
 	members    map[string]*PoolNode
 	httpClient *http.Client
 }
-
 
 func LoadPoolNodes(poolName string) error {
 	return nil
@@ -48,14 +47,13 @@ func (pool *Pool) RemovePoolNode(hostname string) error {
 	return nil
 }
 
-
 func (node *PoolNode) GetNodeURI() (string, error) {
 	if node.nodeURI == "" {
 		b := &strings.Builder{}
 
-        _, _ = b.WriteString(node.scheme)
+		_, _ = b.WriteString(node.scheme)
 		_, _ = b.WriteString("://")
-        _, _ = b.WriteString(node.ip.String())
+		_, _ = b.WriteString(node.ip.String())
 		_, _ = b.WriteString(node.ctxRoot)
 		_, _ = b.WriteString(node.relCtxRoot)
 		node.nodeURI = b.String()
