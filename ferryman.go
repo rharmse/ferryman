@@ -1,7 +1,5 @@
 package main
 
-import "github.com/rharmse/ferryman"
-
 func main() {
 
     conf, error := ferryman.LoadConf()
