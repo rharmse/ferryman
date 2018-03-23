@@ -66,9 +66,13 @@ func LoadConf(pathToConf string) (Config, error) {
 func WriteConf(pathToNewConf string, pathToCurrentConf string, conf Config) error {
 	raw, marshalError := json.Marshal(&conf)
 	fInf, fileError := os.Stat(pathToCurrentConf)
-    
-    if marshalError != nil && fileError != nil {
-        return ioutil.WriteFile(pathToNewConf, raw, fInf.Mode()) 
-    }
-    if marshalError != nil {return marshalError} else {return fileError}
+
+	if marshalError != nil && fileError != nil {
+		return ioutil.WriteFile(pathToNewConf, raw, fInf.Mode())
+	}
+	if marshalError != nil {
+		return marshalError
+	} else {
+		return fileError
+	}
 }

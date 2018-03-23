@@ -61,11 +61,17 @@ func (node *PoolNode) GetNodeURI() (string, error) {
 	return node.nodeURI, nil
 }
 
-func (pool *Pool) SetupClient() error {
+func (pool *Pool) setupClient() error {
 	pool.httpClient = &http.Client{
 		Timeout: time.Second,
 		Transport: &http.Transport{
 			MaxIdleConns:        len(pool.members) * 110,
 			MaxIdleConnsPerHost: 100}}
 	return nil
+}
+
+//This initializes a Pool, sets up the Pool and Member transports
+//and clients, it does not start serving.
+func BootstrapPool(config *Config) (*Pool, error) {
+	return nil, nil
 }
