@@ -6,10 +6,10 @@
   "serveOn": {"hostname":"localhost", "httpPort":80, "httpsPort":443},
   "members" :
   [
-    {"hostname":"localhost",  "port":8081,  "relCtxRoot": ""  },
-    {"hostname":"localhost",  "port":8082,  "relCtxRoot": ""  },
-    {"hostname":"localhost",  "port":8083,  "relCtxRoot": ""  },
-    {"hostname":"localhost",  "port":8084,  "relCtxRoot": "/v1" }
+    {"hostname":"localhost",  "port":8081,  "relCtxRoot": ""},
+    {"hostname":"localhost",  "port":8082,  "relCtxRoot": ""},
+    {"hostname":"localhost",  "port":8083,  "relCtxRoot": ""},
+    {"hostname":"localhost",  "port":8084,  "relCtxRoot": "/v1"}
   ],
   "rewriteRules":
   [

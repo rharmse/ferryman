@@ -61,6 +61,7 @@ func (node *PoolNode) GetNodeURI() (string, error) {
 	return node.nodeURI, nil
 }
 
+//Setup transport for upstream member
 func (pool *Pool) setupClient() error {
 	pool.httpClient = &http.Client{
 		Timeout: time.Second,
@@ -72,6 +73,12 @@ func (pool *Pool) setupClient() error {
 
 //This initializes a Pool, sets up the Pool and Member transports
 //and clients, it does not start serving.
-func BootstrapPool(config *Config) (*Pool, error) {
+func BootstrapPools(config *Config) (map[string]*Pool, error) {
+	pools := make(map[string]*Pool, len(config.Pools))
+
+	for _, poolConf := range config.Pools {
+		pool := &Pool{}
+
+	}
 	return nil, nil
 }
