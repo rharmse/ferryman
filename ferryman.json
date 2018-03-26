@@ -3,7 +3,8 @@
   "poolName": "MyWebSite",
   "domain": "www.domain.co.za",
   "ctxRoot": "",
-  "serveOn": {"hostname":"localhost", "httpPort":80, "httpsPort":443},
+  "serveOn": {"hostname":"localhost", "httpPort":80, "httpsPort":443, "readTimeout":5, "writeTimeout":5, "idleTimeout":30},
+  "upstreamCnctConf": {"maxCon":15, "maxIdleCon":10, "timeout":10, "keepaliveTime":30},
   "members" :
   [
     {"hostname":"localhost",  "port":8081,  "relCtxRoot": ""},

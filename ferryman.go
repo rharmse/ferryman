@@ -2,11 +2,37 @@ package main
 
 import (
 	"fmt"
-
+    "runtime"
+    "os"
+    "errors"
 	"github.com/rharmse/ferryman/lib"
 )
 
+func GetConf() (*Config, error) {
+    usrHome := ""
+    hasHome := false
+    
+    switch opsys := runtime.GOOS; opsys {
+        case "windows":
+            usrHome, hasHome := os.LookupEnv("USERPROFILE")
+        case "linux":
+            usrHome, hasHome := os.LookupEnv("HOME")
+        default:
+            fmt.Printf("OS is => %s\n", opsys)
+            return nil, errors.New("Unsupported OS.")
+    }
+    
+    if !hasHome || "" == usrHome
+        return nil, errors.New("User profile home environment variable not set or present.")
+    
+    conf, error := ferryman.LoadConf(userHome + "/ferryman.json")
+    
+    return &conf, error
+}
+
 func main() {
+    
+    
 
 	conf, error := ferryman.LoadConf("/home/rharmse/go/src/github.com/rharmse/ferryman/ferryman.json")
 	if error == nil {
