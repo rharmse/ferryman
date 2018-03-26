@@ -23,20 +23,20 @@ type NodeDataTracker struct {
 type PoolNode struct {
 	hostname   string
 	ip         net.IP
-	port       uint16
+	port       uint64
 	relCtxRoot string
 	ctxRoot    string
 	nodeURI    string
 	scheme     string
+	httpClient *http.Client
 }
 
 //Represents a container of upstream HTTP Servers
 //serving client requests, will be utilized in a round robin
 //fashion or least busy server
 type Pool struct {
-	name       string
-	members    map[string]*PoolNode
-	httpClient *http.Client
+	name    string
+	members map[string]*PoolNode
 }
 
 func LoadPoolNodes(poolName string) error {
@@ -62,23 +62,25 @@ func (node *PoolNode) GetNodeURI() (string, error) {
 }
 
 //Setup transport for upstream member
-func (pool *Pool) setupClient() error {
-	pool.httpClient = &http.Client{
-		Timeout: time.Second,
+func (node *PoolNode) setupClient(conf PoolConfig) {
+	node.httpClient = &http.Client{
+		Timeout: time.Duration(conf.UpstrConProf.ConTimeout) * time.Second,
 		Transport: &http.Transport{
-			MaxIdleConns:        len(pool.members) * 110,
-			MaxIdleConnsPerHost: 100}}
-	return nil
+			MaxIdleConns:        conf.UpstrConProf.MaxIdleCons,
+			MaxIdleConnsPerHost: conf.UpstrConProf.MaxIdleCons,
+			IdleConnTimeout:     time.Duration(conf.UpstrConProf.KeepAliveTime) * time.Second,
+		}}
 }
 
 //This initializes a Pool, sets up the Pool and Member transports
 //and clients, it does not start serving.
 func BootstrapPools(config *Config) (map[string]*Pool, error) {
-	pools := make(map[string]*Pool, len(config.Pools))
+	/*pools := make(map[string]*Pool, len(config.Pools))
 
 	for _, poolConf := range config.Pools {
 		pool := &Pool{}
 
 	}
+	*/
 	return nil, nil
 }

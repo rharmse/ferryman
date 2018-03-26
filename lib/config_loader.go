@@ -2,9 +2,11 @@ package ferryman
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"runtime"
 )
 
 //Represents a rule configuration
@@ -17,29 +19,29 @@ type RuleConfig struct {
 //Represents a upstream member configuration.
 type MemberConfig struct {
 	Hostname   string `json:"hostname"`
-	Port       uint16 `json:"port"`
+	Port       int    `json:"port"`
 	RelCtxRoot string `json:"relCtxRoot"`
 }
 
 //Represents a upstream connection profile for pool members
 type UpstreamConConfig struct {
-	MaxCons       uint16 `json:"maxCon"`
-	MaxIdleCons   uint32 `json:"maxIdleCon"`
-	ConTimeout    uint16 `json:"timeout"`
-	KeepAliveTime uint16 `json:"keepaliveTime"`
+	MaxCons       int `json:"maxCon"`
+	MaxIdleCons   int `json:"maxIdleCon"`
+	ConTimeout    int `json:"timeout"`
+	KeepAliveTime int `json:"keepaliveTime"`
 }
 
 //Represents the host configuration to expose
 type HostConfig struct {
 	Hostname     string `json:"hostname"`
-	HttpPort     uint16 `json:"httpPort"`
-	HttpsPort    uint16 `json:"httpsPort"`
-	ReadTimeout  uint16 `json:"readTimeout"`
-	WriteTimeout uint16 `json:"writeTimeout"`
-	IdleTimeout  uint16 `json:"idleTimeout"`
+	HttpPort     int    `json:"httpPort"`
+	HttpsPort    int    `json:"httpsPort"`
+	ReadTimeout  int    `json:"readTimeout"`
+	WriteTimeout int    `json:"writeTimeout"`
+	IdleTimeout  int    `json:"idleTimeout"`
 }
 
-//Represents the pool configuration including rules, upstram members etc
+//Represents the pool configuration including rules, upstream members etc
 type PoolConfig struct {
 	PoolName       string            `json:"poolName"`
 	Domain         string            `json:"domain"`
@@ -55,59 +57,68 @@ type PoolConfig struct {
 
 //Represents multiple pool configurations
 type Config struct {
-	Pools []PoolConfig `json:"ferrymanConf"`
+	Pools    []PoolConfig `json:"ferrymanConf"`
+	ConfFile string       `json:"-"`
 }
 
 //This loads the configuration from users profile directory.
 func GetConf() (*Config, error) {
-    usrHome := ""
-    hasHome := false
-    
-    switch opsys := runtime.GOOS; opsys {
-        case "windows":
-            usrHome, hasHome := os.LookupEnv("USERPROFILE")
-        case "linux":
-            usrHome, hasHome := os.LookupEnv("HOME")
-        default:
-            fmt.Printf("OS is => %s\n", opsys)
-            return nil, errors.New("Unsupported OS.")
-    }
-    
-    if !hasHome || "" == usrHome
-        return nil, errors.New("User profile home environment variable not set or present.")
-    
-    config, error := LoadConf(userHome + "/ferryman.json")
-    
-    return config, error
+	usrHome := ""
+	hasHome := false
+
+	switch opsys := runtime.GOOS; opsys {
+	case "windows":
+		usrHome, hasHome = os.LookupEnv("USERPROFILE")
+	case "linux":
+		usrHome, hasHome = os.LookupEnv("HOME")
+	default:
+		fmt.Printf("OS is => %s\n", opsys)
+		return nil, errors.New("Unsupported OS.")
+	}
+
+	if !hasHome || "" == usrHome {
+		return nil, errors.New("User profile home environment variable not set or present.")
+	}
+
+	config, error := LoadConf(usrHome + "/ferryman.json")
+	return config, error
 }
 
 //Loads the configuration from JSON config file, returns struct.
 func LoadConf(pathToConf string) (*Config, error) {
-    config := &Config{}
+	config := &Config{}
 	if file, error := os.Stat(pathToConf); file != nil && error == nil {
 		raw, error := ioutil.ReadFile(pathToConf)
 
 		if error == nil {
 			error = json.Unmarshal(raw, config)
+			config.ConfFile = pathToConf
 			fmt.Println("Unmarshalled")
 		}
-		return &config, error
+		return config, error
 	} else {
-		return &Config{}, error
+		return config, error
 	}
 }
 
 //Writes the configuration to JSON config file, after potential change
-func StoreConf(pathToNewConf string, pathToCurrentConf string, conf *Config) error {
-	raw, marshalError := json.Marshal(conf)
-	fInf, fileError := os.Stat(pathToCurrentConf)
+func StoreConf(pathToNewConf string, conf *Config) error {
 
-	if marshalError != nil && fileError != nil {
-		return ioutil.WriteFile(pathToNewConf, raw, fInf.Mode())
-	}
-	if marshalError != nil {
-		return marshalError
-	} else {
+	fInf, fileError := os.Stat(conf.ConfFile)
+
+	if fileError != nil {
 		return fileError
+	}
+
+	raw, marshalError := json.Marshal(conf)
+
+	if marshalError == nil {
+		if pathToNewConf != "" {
+			return ioutil.WriteFile(pathToNewConf, raw, fInf.Mode())
+		} else {
+			return ioutil.WriteFile(conf.ConfFile, raw, fInf.Mode())
+		}
+	} else {
+		return marshalError
 	}
 }
