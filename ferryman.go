@@ -36,9 +36,12 @@ func main() {
 
 	//ferryman.BootstrapPool(&conf)
 	// 1. Determine if there is configuration, and load from it
-	// 2. Load Rules
-	// 3. Setup Content Rewrites
+	// 2. Load Rules - Normal handlers, with pre/post middleware
+	// 3. Setup Content Rewrites -  post request middleware
 	// 4. Setup server & Clients
+    
+    //Need prerequest middleware eg, header rewrites
+    //need post request middleware eg header rewrites, body content replacement
 	router := httprouter.New()
 	router.GET("/asd", Index)
 
