@@ -62,7 +62,7 @@ type Config struct {
 }
 
 //This loads the configuration from users profile directory.
-func GetConf() (*Config, error) {
+func GetConf(filename string) (*Config, error) {
 	usrHome := ""
 	hasHome := false
 
@@ -80,11 +80,15 @@ func GetConf() (*Config, error) {
 		return nil, errors.New("User profile home environment variable not set or present.")
 	}
 
-	config, error := LoadConf(usrHome + "/ferryman.json")
+	if filename == "" {
+		filename = "ferryman.json"
+	}
+
+	config, error := LoadConf(usrHome + "/" + filename)
 	return config, error
 }
 
-//Loads the configuration from JSON config file, returns struct.
+//Loads the configuration from JSON config file, returns struct value pointer.
 func LoadConf(pathToConf string) (*Config, error) {
 	config := &Config{}
 	if file, error := os.Stat(pathToConf); file != nil && error == nil {
