@@ -1,7 +1,8 @@
 package ferryman
 
 import (
-	"bytes"
+	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -9,22 +10,37 @@ import (
 //Reference http://daslab.seas.harvard.edu/classes/cs265/files/presentations/CS265_presentation_Sinyagin.pdf
 
 type Router struct {
+	pool *Pool
 }
 
 //Build a new router load rules should be assigned here from
 //config
-func NewRouter() *Router {
-	return &Router{}
+func NewRouter(pool *Pool) *Router {
+	return &Router{pool: pool}
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-
-    w.Header().Add("Served By", "Ferryman")
-	w.WriteHeader(200)
-	
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(req.Body)
-	b := buf.Bytes()
-	req.Body.Close()
-	w.Write(b)
+	w.Header().Set("Served-By", "Ferryman")
+	member := r.pool.members["hostname"]
+	if member != nil {
+		resp, err := member.httpClient.Do()
+		if err != nil {
+			//defer resp.Body.Close()
+			io.Copy(w, resp.Body)
+		} else {
+			fmt.Printf("%v\n", err)
+		}
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte{})
+	}
+	return
+	/*//fmt.Println("Served here")
+	w.WriteHeader(http.StatusOK)
+	if req.Body != nil {
+		defer req.Body.Close()
+		io.Copy(w, req.Body)
+	}
+	w.Write([]byte{})
+	return*/
 }
