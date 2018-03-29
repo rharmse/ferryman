@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"time"
 
+	"github.com/kavu/go_reuseport"
 	ferryman "github.com/rharmse/ferryman/lib"
-	"golang.org/x/net/netutil"
 )
 
 func main() {
@@ -31,15 +30,18 @@ func main() {
 	router := ferryman.NewRouter(pools["VCOZA"])
 	fmt.Println("Router up")
 	server := &http.Server{
-		IdleTimeout:  100 * time.Millisecond,
+		IdleTimeout:  5000 * time.Millisecond,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
 		Handler:      router}
 
-	listener, error := net.Listen("tcp", ":8080")
-	error = server.Serve(netutil.LimitListener(listener, 400))
+	listener, err := reuseport.Listen("tcp", "localhost:8080")
+	err = server.Serve(listener)
 
-	if error != nil {
-		fmt.Printf("%v", error)
+	//listener, error := net.Listen("tcp", ":8080")
+	//error = server.Serve(netutil.LimitListener(listener, 400))
+
+	if err != nil {
+		fmt.Printf("%v", err)
 	}
 }

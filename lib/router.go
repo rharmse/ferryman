@@ -1,7 +1,6 @@
 package ferryman
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 )
@@ -21,7 +20,7 @@ func NewRouter(pool *Pool) *Router {
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Served-By", "Ferryman")
-	member := r.pool.members["hostname"]
+	/*member := r.pool.members["hostname"]
 	if member != nil {
 		resp, err := member.httpClient.Do()
 		if err != nil {
@@ -35,12 +34,12 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.Write([]byte{})
 	}
 	return
-	/*//fmt.Println("Served here")
+	fmt.Println("Served here")*/
 	w.WriteHeader(http.StatusOK)
 	if req.Body != nil {
 		defer req.Body.Close()
 		io.Copy(w, req.Body)
 	}
 	w.Write([]byte{})
-	return*/
+	return
 }
