@@ -27,7 +27,7 @@ func main() {
 
 	//Need prerequest middleware eg, header rewrites
 	//need post request middleware eg header rewrites, body content replacement
-	router := ferryman.NewRouter(pools["VCOZA"])
+	router := ferryman.New(pools["VCOZA"])
 	fmt.Println("Router up")
 	server := &http.Server{
 		IdleTimeout:  5000 * time.Millisecond,

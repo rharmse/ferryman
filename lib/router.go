@@ -3,6 +3,7 @@ package ferryman
 import (
 	"io"
 	"net/http"
+    "github.com/kellydunn/go-art"
 )
 
 //Router to implement adaptive radix tree https://pdfs.semanticscholar.org/6abf/5107efc723c655956f027b4a67565b048799.pdf
@@ -10,11 +11,12 @@ import (
 
 type Router struct {
 	pool *Pool
+    routes *ArtTree
 }
 
 //Build a new router load rules should be assigned here from
 //config
-func NewRouter(pool *Pool) *Router {
+func New(pool *Pool) *Router {
 	return &Router{pool: pool}
 }
 
