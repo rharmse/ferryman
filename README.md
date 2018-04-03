@@ -13,6 +13,7 @@ Ferryman is intended to be a HTTP/HTTPS Loadbalancer with the following features
 * Hot config/rule reloads.
 * Caching of http responses.
 * Support for websockets.
+* Generating NginX configuration.
 
 It is currently in development as a pet project.
 
