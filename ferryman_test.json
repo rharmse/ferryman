@@ -1,0 +1,34 @@
+{"ferrymanConf" :
+  [{
+  "poolName": "TEST",
+  "domain": "www.example.com",
+  "ctxRoot": "",
+  "serveOn": {"hostname":"localhost", "httpPort":8080, "httpsPort":443, "readTimeout":5, "writeTimeout":5, "idleTimeout":30},
+  "upstreamCnctConf": {"maxCon":15, "maxIdleCon":10, "timeout":10, "keepaliveTime":30},
+  "members" :
+  [
+    {"hostname":"localhost",  "port":8081,  "relCtxRoot": ""},
+    {"hostname":"localhost",  "port":8082,  "relCtxRoot": ""},
+    {"hostname":"localhost",  "port":8083,  "relCtxRoot": ""},
+    {"hostname":"localhost",  "port":8084,  "relCtxRoot": "/v1"}
+  ],
+  "rewriteRules":
+  [
+    { "fromURI": ["/path/to/forward/from1", "/path/to/forward/from2"], "toURI": "/path/to/forward/to", "regex":false},
+    { "fromURI": ["/path/to/forward.*"], "toURI": "/path/to/forward/to", "regex":true}
+  ],
+  "tempRedirRules":
+  [
+    {"fromURI": ["/path/to/redirect/from"], "toURI": "/path/to/new/resource", "regex":false},
+    {"fromURI": ["/path/to/redirect.*"], "toURI": "/path/to/new/resource", "regex":true}
+  ],
+  "permRedirRules":
+  [
+    {"fromURI": ["/path/to/redirect/from/perm"], "toURI": "/path/to/new/resource", "regex":false},
+    {"fromURI": ["/path/to/redirect.*"], "toURI": "/path/to/new/resource", "regex":true}
+  ],
+  "dropRules":
+  [
+    {"fromURI": ["/path/to/drop1", "/path/to/drop2*"], "toURI": "", "regex":false}
+  ]
+}]}

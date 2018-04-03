@@ -2,22 +2,22 @@ package main
 
 import (
 	"fmt"
+    "net"
 	"net/http"
 	"time"
-
-	"github.com/kavu/go_reuseport"
-	ferryman "github.com/rharmse/ferryman/lib"
+	//"github.com/kavu/go_reuseport"
+	"github.com/rharmse/ferryman/lib"
 )
 
 func main() {
 
-	conf, error := ferryman.GetConf("ferryman_online.json")
+	conf, error := ferryman.GetConf("ferryman_test.json")
 	if error != nil {
 		panic(error)
 	}
 
 	pools := ferryman.InitPools(conf)
-	fmt.Printf("%v", pools["VCOZA"].String())
+	fmt.Printf("%v", pools["TEST"].String())
 
 	//ferryman.BootstrapPool(&conf)
 	// 1. Determine if there is configuration, and load from it
@@ -27,7 +27,7 @@ func main() {
 
 	//Need prerequest middleware eg, header rewrites
 	//need post request middleware eg header rewrites, body content replacement
-	router := ferryman.New(pools["VCOZA"])
+	router := ferryman.New()
 	fmt.Println("Router up")
 	server := &http.Server{
 		IdleTimeout:  5000 * time.Millisecond,
@@ -35,11 +35,15 @@ func main() {
 		WriteTimeout: 5 * time.Second,
 		Handler:      router}
 
-	listener, err := reuseport.Listen("tcp", "localhost:8080")
+	/*
+    listener, err := reuseport.Listen("tcp", "localhost:8080")
+    defer listener.Close()
 	err = server.Serve(listener)
-
-	//listener, error := net.Listen("tcp", ":8080")
-	//error = server.Serve(netutil.LimitListener(listener, 400))
+    */
+    
+	listener, err := net.Listen("tcp", ":8080")
+    defer listener.Close()
+	err = server.Serve(listener)
 
 	if err != nil {
 		fmt.Printf("%v", err)
