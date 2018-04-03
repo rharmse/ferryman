@@ -6,18 +6,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
 	"github.com/kellydunn/go-art"
 )
 
 //Primitive to indicate the rule types
 type ruleType int
 
-//Primitive to represent http status codes, driven
-type httpStatusCode int
-
 const (
-	StatusALL httpStatusCode = -1
+	StatusALL int = -1
 )
 
 //Route Types
@@ -41,7 +37,7 @@ type Route struct {
 	fallback        fallbackHandlerFunc
 	err             errHandlerFunc
 	targetURI       string
-	expResStatCodes map[int]httpStatusCode
+	expResStatCodes map[int]int
 	pool            *Pool
 }
 
@@ -120,7 +116,7 @@ func (router *Router) getRoute(uriPath string) (route *Route) {
 			apply:           defaultRouteHandler,
 			rType:           Default,
 			targetURI:       uriPath,
-			expResStatCodes: map[int]httpStatusCode{0: StatusALL},
+			expResStatCodes: map[int]int{StatusALL: StatusALL},
 			pool:            router.defaultPool,
 		}
 	} else {
@@ -136,16 +132,16 @@ func buildProxyRequest(r *http.Request, baseURI, targetURI string) (pr *http.Req
 	fmt.Printf("\nURI:%v, ERR:%v", url, err)
 	if err == nil {
 		pr.URL = url
-		return pr, err
+		return pr, nil
 	} else {
 		return nil, err
 	}
 }
 
-func statusValid(statusCode int, validResponses map[int]httpStatusCode) bool {
+func statusValid(statusCode int, validResponses map[int]int) bool {
 	code := validResponses[statusCode]
 	fmt.Printf("\nResponse Code:%v:", code)
-	if code > 0 || code == StatusALL {
+	if code == StatusALL || code > 0 {
 		return true
 	} else {
 		return validResponses[statusCode] > 0
