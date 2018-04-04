@@ -31,6 +31,7 @@ type PoolMember struct {
 	nodeURI    string
 	scheme     string
 	httpClient *http.Client
+	requestCnt uint
 }
 
 //Represents a container of upstream HTTP Servers
@@ -61,10 +62,23 @@ func (node *PoolMember) setupClient(conf UpstreamConConfig) {
 	node.httpClient = &http.Client{
 		Timeout: time.Duration(conf.ConTimeout) * time.Second,
 		Transport: &http.Transport{
+			DisableKeepAlives:   false,
+			DisableCompression:  false,
 			MaxIdleConns:        conf.MaxIdleCons,
 			MaxIdleConnsPerHost: conf.MaxIdleCons,
 			IdleConnTimeout:     time.Duration(conf.KeepAliveTime) * time.Second,
 		}}
+}
+
+func (pool *Pool) getLeastBusy() (member *PoolMember) {
+	var mlast *PoolMember
+	for _, m := range pool.members {
+		if mlast == nil || m.requestCnt <= mlast.requestCnt {
+			member = m
+			mlast = m
+		}
+	}
+	return member
 }
 
 //Resolve IP associated to member hostname, only grabs first resolved IPV4.

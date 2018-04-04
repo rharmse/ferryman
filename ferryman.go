@@ -12,16 +12,16 @@ import (
 func main() {
 
 	// Load from configuration
-	conf, error := ferryman.GetConf("ferryman_test.json")
+	conf, error := ferryman.GetConf("ferryman_online.json")
 	if error != nil {
 		panic(error)
 	}
 
 	//Initialize Pools
 	pools := ferryman.InitPools(conf)
-	fmt.Printf("\n%v", pools["TEST"].String())
+	fmt.Printf("\n%v", pools["VCOZA"].String())
 
-	router := ferryman.New(pools["TEST"])
+	router := ferryman.New(pools["VCOZA"])
 	//router
 	fmt.Println("Router up")
 

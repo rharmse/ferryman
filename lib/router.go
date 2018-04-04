@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"time"
+
 	"github.com/kellydunn/go-art"
 )
 
@@ -99,10 +102,10 @@ func (ro *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	route := ro.getRoute(r.RequestURI)
 	switch route.rType {
 	case Default:
-		fmt.Printf("\nServing Default Route %v", r)
+		//fmt.Printf("\nServing Default Route %v", r)
 		route.apply(rw, r, route)
 	default:
-		fmt.Printf("\nServing %v", r)
+		//fmt.Printf("\nServing %v", r)
 		route.apply(rw, r, route)
 	case RouteDrop:
 		dropHandler(rw, r)
@@ -126,12 +129,14 @@ func (router *Router) getRoute(uriPath string) (route *Route) {
 }
 
 func buildProxyRequest(r *http.Request, baseURI, targetURI string) (pr *http.Request, err error) {
-	fmt.Printf("\nURI:%v", baseURI+targetURI)
+	//fmt.Printf("\nURI:%v", baseURI+targetURI)
 	pr = r.WithContext(r.Context())
-	url, err := r.URL.Parse(baseURI + targetURI)
-	fmt.Printf("\nURI:%v, ERR:%v", url, err)
+	url := new(url.URL)
+	//fmt.Printf("\nURI:%v, ERR:%v", url, err)
+	pr.URL, err = url.Parse(baseURI + targetURI)
+	pr.RequestURI = ""
+	pr.Close = false
 	if err == nil {
-		pr.URL = url
 		return pr, nil
 	} else {
 		return nil, err
@@ -140,11 +145,11 @@ func buildProxyRequest(r *http.Request, baseURI, targetURI string) (pr *http.Req
 
 func statusValid(statusCode int, validResponses map[int]int) bool {
 	code := validResponses[statusCode]
-	fmt.Printf("\nResponse Code:%v:", code)
+	//fmt.Printf("\nResponse Code:%v:", code)
 	if code == StatusALL || code > 0 {
 		return true
 	} else {
-		return validResponses[statusCode] > 0
+		return statusCode > 0
 	}
 }
 
@@ -176,23 +181,35 @@ func copyProxyRequestHeaders(req *http.Request, pReq *http.Request) {
 
 //Represents the majority of traffic being handled by the proxy
 func defaultRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) (err error) {
-	for _, member := range route.pool.members {
-		req, err := buildProxyRequest(r, member.nodeURI, route.targetURI)
-		fmt.Printf("\nDoing %v", req.URL.String())
-		resp, err := member.httpClient.Do(req)
-		if err == nil {
-			if statusValid(resp.StatusCode, route.expResStatCodes) {
-				copyResponseHeaders(rw, resp)
-				io.Copy(rw, resp.Body)
-				defer resp.Body.Close()
+	st := time.Now()
+	member := route.pool.getLeastBusy()
+	pr, err := buildProxyRequest(r, member.nodeURI, route.targetURI)
+	//fmt.Printf("\nDoing %v", pr.URL.String())
+	member.requestCnt++
+	resp, err := member.httpClient.Do(pr)
+	//fmt.Printf("\nDid %v, Err:%v", pr.URL.String(), err)
+	if err == nil {
+		if statusValid(resp.StatusCode, route.expResStatCodes) {
+			defer r.Body.Close()
+			defer resp.Body.Close()
+			copyResponseHeaders(rw, resp)
+			rw.Header().Set("Served-By", "Ferryman")
+			rw.WriteHeader(resp.StatusCode)
+			byteCnt, err := io.CopyBuffer(rw, resp.Body, make([]byte, 1024*64))
+			if err != nil {
+				fmt.Printf("\nError reading response:%v", err)
 			} else {
-				fallbackOrErr(rw, r, route)
+				fmt.Printf("\nRead :%v kb, from %v in %v", byteCnt/1024, pr.URL.String(), time.Since(st))
 			}
+
 		} else {
-			fmt.Printf("\nErr:%v", err)
-			return err
+			fallbackOrErr(rw, r, route)
 		}
+	} else {
+		//fmt.Printf("\nErr:%v", err)
+		return err
 	}
+
 	return nil
 }
 
@@ -201,5 +218,9 @@ func redirectingRouteHandler(rw http.ResponseWriter, r *http.Request, route *Rou
 }
 
 func errorRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) {
-
+	defer r.Body.Close()
+	io.Copy(rw, r.Body)
+	rw.WriteHeader(http.StatusInternalServerError)
+	rw.Header().Set("Served-By", "Ferryman")
+	return
 }
