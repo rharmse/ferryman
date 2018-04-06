@@ -1,16 +1,14 @@
-package ferryman_test
+package ferryman
 
 import (
 	"net/http"
 	"testing"
-
-	"github.com/rharmse/ferryman/lib"
 )
 
 //Tests Router Initialisation
 func TestNew(t *testing.T) {
-	router := ferryman.New(&ferryman.Pool{})
-	if router == nil {
+	router := New(&Pool{})
+	if router.routes == nil {
 		t.Errorf("No route store created")
 	}
 }
@@ -18,10 +16,10 @@ func TestNew(t *testing.T) {
 //Tests Getting a Default Route (no route found in ARTree)
 func TestGetRoute(t *testing.T) {
 	routePath := "/you/have/no/routes/here/haha"
-	defaultPool := &ferryman.Pool{}
+	defaultPool := &Pool{}
 
 	//
-	router := ferryman.New(defaultPool)
+	router := New(defaultPool)
 	if router.routes == nil {
 		t.Errorf("No route store created")
 	}
@@ -29,13 +27,13 @@ func TestGetRoute(t *testing.T) {
 
 	if route == nil &&
 		//has StatusALL as valid response type
-		route.validRouteResponseStatus(ferryman.StatusALL) &&
+		route.validRouteResponseStatus(StatusALL) &&
 		//has a defaultRouteHandler
 		route.apply != nil &&
 		//Has a default pool, same as constructed on router
 		(route.pool != nil && route.pool == defaultPool) &&
 		//Has a default type route
-		route.rType == ferryman.Default {
+		route.rType == Default {
 
 		t.Errorf("No default route created")
 	}
@@ -43,7 +41,7 @@ func TestGetRoute(t *testing.T) {
 
 // Tests Default Rout
 func TestValidRouteResponseStatus(t *testing.T) {
-	route := &ferryman.Route{
+	route := &Route{
 		validRespStatusCodes: map[int]int{StatusALL: StatusALL},
 	}
 
@@ -54,7 +52,7 @@ func TestValidRouteResponseStatus(t *testing.T) {
 
 // Tests if http.StatusInternalServerError is a valid response for a route
 func TestInvValidRouteResponseStatus(t *testing.T) {
-	route := &ferryman.Route{
+	route := &Route{
 		validRespStatusCodes: map[int]int{http.StatusOK: http.StatusOK},
 	}
 

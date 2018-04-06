@@ -143,9 +143,8 @@ func (route *Route) validRouteResponseStatus(statusCode int) bool {
 	code := route.validRespStatusCodes[statusCode]
 	if route.validRespStatusCodes[StatusALL] == StatusALL || code > 0 {
 		return true
-	} else {
-		return statusCode > 0
 	}
+	return false
 }
 
 // Fallback handler if there is a error from the upstream
