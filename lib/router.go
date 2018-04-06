@@ -1,8 +1,9 @@
-//Router to implement adaptive radix tree https://pdfs.semanticscholar.org/6abf/5107efc723c655956f027b4a67565b048799.pdf
-//Reference http://daslab.seas.harvard.edu/classes/cs265/files/presentations/CS265_presentation_Sinyagin.pdf
+// This is where the routing functions are mainly handled including any
+// http Handlers.
 package ferryman
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,38 +13,45 @@ import (
 	"github.com/kellydunn/go-art"
 )
 
-//Primitive to indicate the rule types
-type ruleType int
+// Primitive to indicate the Rule/Route types
+type routeRule int
 
+// This constant is used with the default handler in order to
+// ensure any http code passed from the upstream is considered valid.
 const (
-	StatusALL int = -1
+	StatusALL int = 999
 )
 
-//Route Types
+// Different routeRule types
 const (
-	_                  = iota
-	RouteDrop ruleType = iota
-	RouteTempRedirect
-	RoutePermRedirect
-	RouteForward
+	_              = iota
+	Drop routeRule = iota
+	TempRedirect
+	PermRedirect
+	Forward
 	Default
 )
 
+// Defines the base http Handlers types
 type routeHandlerFunc func(rw http.ResponseWriter, r *http.Request, route *Route) (err error)
 type fallbackHandlerFunc func(rw http.ResponseWriter, r *http.Request) (err error)
 type errHandlerFunc func(rw http.ResponseWriter, r *http.Request, route *Route)
 type dropHandlerFunc func(rw http.ResponseWriter, r *http.Request)
 
+// This is the representation of a route, routes are bound to pools
+// A routeHandlerFunc is 1..1, fallbackHandlerFunc and errHandlerFunc is 0..1.
+// targetURI is the relative uriPath that the request is forarded to.
 type Route struct {
-	rType           ruleType
-	apply           routeHandlerFunc
-	fallback        fallbackHandlerFunc
-	err             errHandlerFunc
-	targetURI       string
-	expResStatCodes map[int]int
-	pool            *Pool
+	rType                routeRule
+	apply                routeHandlerFunc
+	fallback             fallbackHandlerFunc
+	err                  errHandlerFunc
+	targetURI            string
+	validRespStatusCodes map[int]int
+	pool                 *Pool
 }
 
+// Houses the routes and specifies default pool
 type Router struct {
 	routes      *art.ArtTree
 	defaultPool *Pool
@@ -70,57 +78,42 @@ var (
 	}
 )
 
-//Build a new router load rules should be assigned here from
-//config
+// Build a new router load rules should be assigned here from config
 func New(defaultPool *Pool) *Router {
 	return &Router{routes: art.NewArtTree(), defaultPool: defaultPool}
 }
 
-//Need to discern types of routes
-func (router *Router) LoadRoutes(conf []*RuleConfig, t ruleType) {
+// Load the routes into the router
+func (router *Router) LoadRoutes(conf []*RuleConfig, t routeRule) {
 	//implement
 }
 
-//Implement the ServeHTTP function Sig, making the router a HTTP Handler
+// Implement the ServeHTTP function Sig, making the router a HTTP Handler
 func (ro *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-
-	/*ctx := r.Context()
-	if cn, ok := rw.(http.CloseNotifier); ok {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithCancel(ctx)
-		defer cancel()
-		notifyChan := cn.CloseNotify()
-		go func() {
-			select {
-			case <-notifyChan:
-				cancel()
-			case <-ctx.Done():
-			}
-		}()
-	}*/
 
 	route := ro.getRoute(r.RequestURI)
 	switch route.rType {
 	case Default:
 		//fmt.Printf("\nServing Default Route %v", r)
 		route.apply(rw, r, route)
-	default:
-		//fmt.Printf("\nServing %v", r)
-		route.apply(rw, r, route)
-	case RouteDrop:
+	case Drop:
 		dropHandler(rw, r)
+	default:
+		err := errors.New("Undefined route type!")
+		panic(err)
 	}
 }
 
+// Fetch route for the current uri requested path
 func (router *Router) getRoute(uriPath string) (route *Route) {
 	potential := router.routes.Search([]byte(uriPath))
 	if potential == nil {
 		route = &Route{
-			apply:           defaultRouteHandler,
-			rType:           Default,
-			targetURI:       uriPath,
-			expResStatCodes: map[int]int{StatusALL: StatusALL},
-			pool:            router.defaultPool,
+			apply:                defaultRouteHandler,
+			rType:                Default,
+			targetURI:            uriPath,
+			validRespStatusCodes: map[int]int{StatusALL: StatusALL},
+			pool:                 router.defaultPool,
 		}
 	} else {
 		route = potential.(*Route)
@@ -128,6 +121,7 @@ func (router *Router) getRoute(uriPath string) (route *Route) {
 	return route
 }
 
+// Build the proxy request to send to the upstream server
 func buildProxyRequest(r *http.Request, baseURI, targetURI string) (pr *http.Request, err error) {
 	//fmt.Printf("\nURI:%v", baseURI+targetURI)
 	pr = r.WithContext(r.Context())
@@ -143,16 +137,18 @@ func buildProxyRequest(r *http.Request, baseURI, targetURI string) (pr *http.Req
 	}
 }
 
-func statusValid(statusCode int, validResponses map[int]int) bool {
-	code := validResponses[statusCode]
-	//fmt.Printf("\nResponse Code:%v:", code)
-	if code == StatusALL || code > 0 {
+// Check if the response http.StausCode is valid for this route
+// Default is StatusALL unless specific codes required
+func (route *Route) validRouteResponseStatus(statusCode int) bool {
+	code := route.validRespStatusCodes[statusCode]
+	if route.validRespStatusCodes[StatusALL] == StatusALL || code > 0 {
 		return true
 	} else {
 		return statusCode > 0
 	}
 }
 
+// Fallback handler if there is a error from the upstream
 func fallbackOrErr(rw http.ResponseWriter, r *http.Request, route *Route) {
 	if route.fallback != nil {
 		if route.fallback(rw, r) != nil {
@@ -163,6 +159,8 @@ func fallbackOrErr(rw http.ResponseWriter, r *http.Request, route *Route) {
 	}
 }
 
+// Clone response headers from upstream response to client response
+// TODO Filter allowed headers out
 func copyResponseHeaders(rw http.ResponseWriter, res *http.Response) {
 	for k, v := range res.Header {
 		for _, vv := range v {
@@ -171,6 +169,8 @@ func copyResponseHeaders(rw http.ResponseWriter, res *http.Response) {
 	}
 }
 
+// Clone the client request headers to the upsteam proxy request
+// TODO Filter allowed headers out
 func copyProxyRequestHeaders(req *http.Request, pReq *http.Request) {
 	for k, v := range req.Header {
 		for _, vv := range v {
@@ -179,7 +179,7 @@ func copyProxyRequestHeaders(req *http.Request, pReq *http.Request) {
 	}
 }
 
-//Represents the majority of traffic being handled by the proxy
+// Default routeRule handler.
 func defaultRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) (err error) {
 	st := time.Now()
 	member := route.pool.getLeastBusy()
@@ -189,7 +189,7 @@ func defaultRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) 
 	resp, err := member.httpClient.Do(pr)
 	//fmt.Printf("\nDid %v, Err:%v", pr.URL.String(), err)
 	if err == nil {
-		if statusValid(resp.StatusCode, route.expResStatCodes) {
+		if route.validRouteResponseStatus(resp.StatusCode) {
 			defer r.Body.Close()
 			defer resp.Body.Close()
 			copyResponseHeaders(rw, resp)
@@ -213,10 +213,12 @@ func defaultRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) 
 	return nil
 }
 
+// This is the default routeRule handler for TempRedirect and PermRedirect
 func redirectingRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) (err error) {
 	return nil
 }
 
+// This is the default errorHandler implementation
 func errorRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) {
 	defer r.Body.Close()
 	io.Copy(rw, r.Body)
