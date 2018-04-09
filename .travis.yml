@@ -1,0 +1,8 @@
+matrix:
+  include:
+    - language: go
+      go: 1.10.x
+
+notifications:
+  email:
+    - rudolf.harmse@gmail.com
