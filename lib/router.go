@@ -22,6 +22,8 @@ const (
 	StatusALL int = 999
 )
 
+var StatusALLMap = map[int]int{StatusALL: StatusALL}
+
 // Different routeRule types
 const (
 	_              = iota
@@ -42,7 +44,7 @@ type dropHandlerFunc func(rw http.ResponseWriter, r *http.Request)
 // A routeHandlerFunc is 1..1, fallbackHandlerFunc and errHandlerFunc is 0..1.
 // targetURI is the relative uriPath that the request is forarded to.
 type Route struct {
-	rType                routeRule
+	routeType            routeRule
 	apply                routeHandlerFunc
 	fallback             fallbackHandlerFunc
 	err                  errHandlerFunc
@@ -58,19 +60,19 @@ type Router struct {
 }
 
 var (
-	defaultHandler = func(rw http.ResponseWriter, r *http.Request, route *Route) (err error) {
+	DefaultHandler = func(rw http.ResponseWriter, r *http.Request, route *Route) (err error) {
 		return defaultRouteHandler(rw, r, route)
 	}
 
-	redirectingHandler = func(rw http.ResponseWriter, r *http.Request, route *Route) (err error) {
+	RedirectingHandler = func(rw http.ResponseWriter, r *http.Request, route *Route) (err error) {
 		return redirectingRouteHandler(rw, r, route)
 	}
 
-	errorHandler = func(rw http.ResponseWriter, r *http.Request, route *Route) {
+	ErrorHandler = func(rw http.ResponseWriter, r *http.Request, route *Route) {
 		errorRouteHandler(rw, r, route)
 	}
 
-	dropHandler = func(rw http.ResponseWriter, r *http.Request) {
+	DropHandler = func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusGone)
 		rw.Write([]byte(http.StatusText(http.StatusGone)))
 		defer r.Body.Close()
@@ -88,16 +90,49 @@ func (router *Router) LoadRoutes(conf []*RuleConfig, t routeRule) {
 	//implement
 }
 
+// Register a route with the the router
+func (router *Router) AddRoute(routePath string, allowedRespStati map[int]int, routeType routeRule, defaultH routeHandlerFunc, errorH errHandlerFunc, fallbackH fallbackHandlerFunc) (route *Route, err error) {
+	switch {
+	case defaultH == nil && errorH == nil:
+		route = &Route{
+			apply:    DefaultHandler,
+			err:      ErrorHandler,
+			fallback: fallbackH}
+	case defaultH != nil && errorH == nil:
+		route = &Route{
+			apply:    defaultH,
+			err:      ErrorHandler,
+			fallback: fallbackH}
+	case defaultH != nil && errorH != nil:
+		route = &Route{
+			apply:    defaultH,
+			err:      errorH,
+			fallback: fallbackH}
+	case defaultH == nil && errorH != nil:
+		route = &Route{
+			apply:    DefaultHandler,
+			err:      errorH,
+			fallback: fallbackH}
+	}
+
+	route.routeType = routeType
+	route.pool = router.defaultPool
+	route.targetURI = routePath
+	route.validRespStatusCodes = allowedRespStati
+
+	router.routes.Insert([]byte(routePath), route)
+	return route, nil
+}
+
 // Implement the ServeHTTP function Sig, making the router a HTTP Handler
 func (ro *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-
-	route := ro.getRoute(r.RequestURI)
-	switch route.rType {
+	route := ro.GetRoute(r.RequestURI, true)
+	switch route.routeType {
 	case Default:
 		//fmt.Printf("\nServing Default Route %v", r)
 		route.apply(rw, r, route)
 	case Drop:
-		dropHandler(rw, r)
+		DropHandler(rw, r)
 	default:
 		err := errors.New("Undefined route type!")
 		panic(err)
@@ -105,20 +140,35 @@ func (ro *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 }
 
 // Fetch route for the current uri requested path
-func (router *Router) getRoute(uriPath string) (route *Route) {
+func (router *Router) GetRoute(uriPath string, createDefault bool) (route *Route) {
 	potential := router.routes.Search([]byte(uriPath))
 	if potential == nil {
-		route = &Route{
-			apply:                defaultRouteHandler,
-			rType:                Default,
-			targetURI:            uriPath,
-			validRespStatusCodes: map[int]int{StatusALL: StatusALL},
-			pool:                 router.defaultPool,
+		if createDefault {
+			route := &Route{
+				apply:                DefaultHandler,
+				routeType:            Default,
+				targetURI:            uriPath,
+				validRespStatusCodes: map[int]int{StatusALL: StatusALL},
+				pool:                 router.defaultPool,
+			}
+			router.routes.Insert([]byte(uriPath), route)
+			return route
+		} else {
+			return nil
 		}
 	} else {
-		route = potential.(*Route)
+		return potential.(*Route)
 	}
-	return route
+}
+
+// Check if the response http.StausCode is valid for this route
+// Default is StatusALL unless specific codes required
+func (route *Route) ValidRouteResponseStatus(statusCode int) bool {
+	code := route.validRespStatusCodes[statusCode]
+	if route.validRespStatusCodes[StatusALL] == StatusALL || statusCode == code {
+		return true
+	}
+	return false
 }
 
 // Build the proxy request to send to the upstream server
@@ -137,39 +187,19 @@ func buildProxyRequest(r *http.Request, baseURI, targetURI string) (pr *http.Req
 	}
 }
 
-// Check if the response http.StausCode is valid for this route
-// Default is StatusALL unless specific codes required
-func (route *Route) validRouteResponseStatus(statusCode int) bool {
-	code := route.validRespStatusCodes[statusCode]
-	if route.validRespStatusCodes[StatusALL] == StatusALL || code > 0 {
-		return true
-	}
-	return false
-}
-
-// Fallback handler if there is a error from the upstream
-func fallbackOrErr(rw http.ResponseWriter, r *http.Request, route *Route) {
-	if route.fallback != nil {
-		if route.fallback(rw, r) != nil {
-			route.err(rw, r, route)
-		}
-	} else {
-		route.err(rw, r, route)
-	}
-}
-
 // Clone response headers from upstream response to client response
-// TODO Filter allowed headers out
+// TODO Filter allowed headers out, rewrite some where required
 func copyResponseHeaders(rw http.ResponseWriter, res *http.Response) {
 	for k, v := range res.Header {
 		for _, vv := range v {
 			rw.Header().Add(k, vv)
 		}
 	}
+	rw.Header().Set("Served-By", "Ferryman")
 }
 
 // Clone the client request headers to the upsteam proxy request
-// TODO Filter allowed headers out
+// TODO Filter allowed headers in, rewrite some where required
 func copyProxyRequestHeaders(req *http.Request, pReq *http.Request) {
 	for k, v := range req.Header {
 		for _, vv := range v {
@@ -178,37 +208,57 @@ func copyProxyRequestHeaders(req *http.Request, pReq *http.Request) {
 	}
 }
 
-// Default routeRule handler.
+// Default ruleRoute HTTP handler.
 func defaultRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) (err error) {
 	st := time.Now()
+
 	member := route.pool.getLeastBusy()
 	pr, err := buildProxyRequest(r, member.nodeURI, route.targetURI)
-	//fmt.Printf("\nDoing %v", pr.URL.String())
-	member.requestCnt++
-	resp, err := member.httpClient.Do(pr)
-	//fmt.Printf("\nDid %v, Err:%v", pr.URL.String(), err)
 	if err == nil {
-		if route.validRouteResponseStatus(resp.StatusCode) {
-			defer r.Body.Close()
-			defer resp.Body.Close()
-			copyResponseHeaders(rw, resp)
-			rw.Header().Set("Served-By", "Ferryman")
-			rw.WriteHeader(resp.StatusCode)
-			byteCnt, err := io.CopyBuffer(rw, resp.Body, make([]byte, 1024*64))
-			if err != nil {
-				fmt.Printf("\nError reading response:%v", err)
-			} else {
-				fmt.Printf("\nRead :%v kb, from %v in %v", byteCnt/1024, pr.URL.String(), time.Since(st))
-			}
+		member.requestCnt++
 
+		//Do ProxyReq
+		resp, err := member.httpClient.Do(pr)
+
+		if err == nil {
+			if route.ValidRouteResponseStatus(resp.StatusCode) {
+				defer r.Body.Close()
+				defer resp.Body.Close()
+				copyResponseHeaders(rw, resp)
+				rw.Header().Set("X-Ferried-In", time.Since(st).String())
+				//Triggers TTFB response write
+				rw.WriteHeader(resp.StatusCode)
+
+				//TODO potentially use bytecnt over time to adaptively size buffers according
+				//to response size, can be tracked from route
+				byteCnt, err := io.CopyBuffer(rw, resp.Body, make([]byte, 1024*64))
+
+				if err == nil {
+					fmt.Printf("\nRead :%v kb, from %v in %v", byteCnt/1024, pr.URL.String(), time.Since(st))
+				}
+				return err
+			} else {
+				return fallbackOrErr(rw, r, route)
+			}
 		} else {
-			fallbackOrErr(rw, r, route)
+			return err
 		}
 	} else {
-		//fmt.Printf("\nErr:%v", err)
 		return err
 	}
+}
 
+// Fallback handler if there is a error from the upstream
+func fallbackOrErr(rw http.ResponseWriter, r *http.Request, route *Route) (err error) {
+	if route.fallback != nil {
+		err := route.fallback(rw, r)
+		if err != nil {
+			route.err(rw, r, route)
+			return err
+		}
+	} else {
+		route.err(rw, r, route)
+	}
 	return nil
 }
 

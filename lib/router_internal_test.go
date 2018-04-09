@@ -23,17 +23,17 @@ func TestGetRoute(t *testing.T) {
 	if router.routes == nil {
 		t.Errorf("No route store created")
 	}
-	route := router.getRoute(routePath)
+	route := router.GetRoute(routePath, true)
 
 	if route == nil &&
 		//has StatusALL as valid response type
-		route.validRouteResponseStatus(StatusALL) &&
+		route.ValidRouteResponseStatus(StatusALL) &&
 		//has a defaultRouteHandler
 		route.apply != nil &&
 		//Has a default pool, same as constructed on router
 		(route.pool != nil && route.pool == defaultPool) &&
 		//Has a default type route
-		route.rType == Default {
+		route.routeType == Default {
 
 		t.Errorf("No default route created")
 	}
@@ -45,7 +45,7 @@ func TestValidRouteResponseStatus(t *testing.T) {
 		validRespStatusCodes: map[int]int{StatusALL: StatusALL},
 	}
 
-	if !route.validRouteResponseStatus(http.StatusInternalServerError) {
+	if !route.ValidRouteResponseStatus(http.StatusInternalServerError) {
 		t.Errorf("Invalid http.StatusCode for route")
 	}
 }
@@ -56,7 +56,7 @@ func TestInvValidRouteResponseStatus(t *testing.T) {
 		validRespStatusCodes: map[int]int{http.StatusOK: http.StatusOK},
 	}
 
-	if route.validRouteResponseStatus(http.StatusInternalServerError) {
+	if route.ValidRouteResponseStatus(http.StatusInternalServerError) {
 		t.Errorf("Invalid http.StatusCode for route")
 	}
 }

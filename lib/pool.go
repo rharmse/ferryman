@@ -60,6 +60,9 @@ func (node *PoolMember) buildNodeURI() {
 //Setup transport for upstream member
 func (node *PoolMember) setupClient(conf UpstreamConConfig) {
 	node.httpClient = &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
 		Timeout: time.Duration(conf.ConTimeout) * time.Second,
 		Transport: &http.Transport{
 			DisableKeepAlives:   false,
