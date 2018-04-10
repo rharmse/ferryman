@@ -22,8 +22,8 @@ It is currently in development as a pet project.
 Nothing to see here keep on moving.
 
 ## Content consumed while learning
-* [![Datastructure Theory - ART]](https://db.in.tum.de/~leis/papers/ART.pdf)
-* [![Datastructure Theory - Tree Comparison]](http://daslab.seas.harvard.edu/classes/cs265/files/presentations/CS265_presentation_Sinyagin.pdf)
+* ![Datastructure Theory - ART](https://db.in.tum.de/~leis/papers/ART.pdf)
+* ![Datastructure Theory - Tree Comparison](http://daslab.seas.harvard.edu/classes/cs265/files/presentations/CS265_presentation_Sinyagin.pdf)
 
 ## Other HTTP Routing/Proxy Projects scoured and their limitations
 * https://github.com/julienschmidt/httprouter, no: regex matching, reverse proxy, content rewrite
