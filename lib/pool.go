@@ -21,7 +21,7 @@ type NodeDataTracker struct {
 	http5xxCnt int
 }
 
-//This represents a upstream HTTP Serving node part of a Resource Pool
+// This represents a upstream HTTP Serving node part of a Resource Pool
 type PoolMember struct {
 	hostname   string
 	ip         net.IP
@@ -34,12 +34,24 @@ type PoolMember struct {
 	requestCnt uint
 }
 
+// Represents an HTTP Session on an upstream server.
+type Session struct {
+	id            string
+	pinned        *PoolMember
+	fallback      *PoolMember
+	lastRequested time.Time
+}
+
 //Represents a container of upstream HTTP Servers
 //serving client requests, will be utilized in a round robin
-//fashion or least busy server
+//fashion or least busy server, supports session affinity
 type Pool struct {
-	name    string
-	members map[string]*PoolMember
+	sticky        bool
+	sessionKeyId  string
+	sessionIdType string
+	name          string
+	members       map[string]*PoolMember
+	sessions      map[string]*Session
 }
 
 //Build the base URI to utilize when interacting with this upstream Server
@@ -73,6 +85,7 @@ func (node *PoolMember) setupClient(conf UpstreamConConfig) {
 		}}
 }
 
+// Returns the pool member with the least amount of requests served
 func (pool *Pool) getLeastBusy() (member *PoolMember) {
 	var mlast *PoolMember
 	for _, m := range pool.members {
@@ -82,6 +95,47 @@ func (pool *Pool) getLeastBusy() (member *PoolMember) {
 		}
 	}
 	return member
+}
+
+// Returns the current session active for this session id which contains
+// a member target or a pool member with the least amount of requests
+// served if no session exists
+func (pool *Pool) getUpstreamTarget(r *http.Request) (member *PoolMember, session *Session) {
+	sessionId := ""
+
+	for _, cookie := range r.Cookies() {
+		if cookie.Name == pool.sessionKeyId {
+			sessionId = cookie.Value
+			break
+		}
+	}
+
+	if sessionId != "" && pool.sessions[sessionId] != nil {
+		return nil, pool.sessions[sessionId]
+	} else {
+		return pool.getLeastBusy(), nil
+	}
+}
+
+// Creates a session
+func (pool *Pool) createSession(resp *http.Response, member *PoolMember) {
+	for _, cookie := range resp.Cookies() {
+		if cookie.Name == pool.sessionKeyId {
+			session := &Session{
+				pinned:        member,
+				id:            cookie.Value,
+				lastRequested: time.Now(),
+			}
+			pool.sessions[session.id] = session
+			fmt.Printf("\nSession started: %v=%v pinned to host %v\n", cookie.Name, cookie.Value, member.hostname)
+			break
+		}
+	}
+}
+
+// Maintains last request time on this session
+func (pool *Pool) maintainSession(session *Session) {
+	session.lastRequested = time.Now()
 }
 
 //Resolve IP associated to member hostname, only grabs first resolved IPV4.
@@ -117,6 +171,12 @@ func addHTTPPoolMember(contextRoot string, memberConfig MemberConfig, uStreamCon
 //Creates a pool with its specific members
 func addPool(config PoolConfig) *Pool {
 	pool := &Pool{}
+	if config.Session.Affinity {
+		pool = &Pool{
+			sessions: make(map[string]*Session, 20000),
+		}
+	}
+
 	poolMembers := make(map[string]*PoolMember, len(config.Members))
 	for _, poolMemConf := range config.Members {
 		poolMember := addHTTPPoolMember(config.CtxRoot, poolMemConf, config.UpstrConProf)
@@ -124,6 +184,10 @@ func addPool(config PoolConfig) *Pool {
 	}
 	pool.members = poolMembers
 	pool.name = config.PoolName
+	pool.sticky = config.Session.Affinity
+	pool.sessionKeyId = config.Session.Identifier
+	pool.sessionIdType = config.Session.Type
+
 	return pool
 }
 

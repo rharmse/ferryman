@@ -9,21 +9,21 @@ import (
 	"runtime"
 )
 
-//Represents a rule configuration
+// Represents a rule configuration
 type RuleConfig struct {
 	FromURI []string `json:"fromURI"`
 	ToURI   string   `json:"toURI"`
 	Regex   bool     `json:"regex"`
 }
 
-//Represents a upstream member configuration.
+// Represents a upstream member configuration.
 type MemberConfig struct {
 	Hostname   string `json:"hostname"`
 	Port       int    `json:"port"`
 	RelCtxRoot string `json:"relCtxRoot"`
 }
 
-//Represents a upstream connection profile for pool members
+// Represents a upstream connection profile for pool members
 type UpstreamConConfig struct {
 	MaxCons       int `json:"maxCon"`
 	MaxIdleCons   int `json:"maxIdleCon"`
@@ -31,7 +31,7 @@ type UpstreamConConfig struct {
 	KeepAliveTime int `json:"keepaliveTime"`
 }
 
-//Represents the host configuration to expose
+// Represents the host configuration to expose
 type HostConfig struct {
 	Hostname     string `json:"hostname"`
 	HttpPort     int    `json:"httpPort"`
@@ -41,11 +41,19 @@ type HostConfig struct {
 	IdleTimeout  int    `json:"idleTimeout"`
 }
 
-//Represents the pool configuration including rules, upstream members etc
+// Session Afinity Config
+type SessionConfig struct {
+	Affinity   bool   `json:"affinity"`
+	Identifier string `json:"identifier"`
+	Type       string `json:"type"`
+}
+
+// Represents the pool configuration including rules, upstream members etc
 type PoolConfig struct {
 	PoolName       string            `json:"poolName"`
 	Domain         string            `json:"domain"`
 	CtxRoot        string            `json:"ctxRoot"`
+	Session        SessionConfig     `json:"session"`
 	ServeOn        HostConfig        `json:"serveOn"`
 	UpstrConProf   UpstreamConConfig `json:"upstreamCnctConf"`
 	Members        []MemberConfig    `json:"members"`
@@ -55,7 +63,7 @@ type PoolConfig struct {
 	DropRules      []RuleConfig      `json:"dropRules"`
 }
 
-//Represents multiple pool configurations
+// Represents multiple pool configurations
 type Config struct {
 	Pools    []PoolConfig `json:"ferrymanConf"`
 	ConfFile string       `json:"-"`

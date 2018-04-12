@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"time"
 	//"github.com/kavu/go_reuseport"
+	reuseport "github.com/kavu/go_reuseport"
 	"github.com/rharmse/ferryman/lib"
 )
 
@@ -38,15 +38,13 @@ func main() {
 		WriteTimeout: 5 * time.Second,
 		Handler:      router}
 
-	/*
-		    listener, err := reuseport.Listen("tcp", "localhost:8080")
-		    defer listener.Close()
-			err = server.Serve(listener)
-	*/
-
-	listener, err := net.Listen("tcp", ":8080")
+	listener, err := reuseport.Listen("tcp", "localhost:8080")
 	defer listener.Close()
 	err = server.Serve(listener)
+
+	/*listener, err := net.Listen("tcp", ":8080")
+	defer listener.Close()
+	err = server.Serve(listener)*/
 
 	if err != nil {
 		fmt.Printf("%v", err)

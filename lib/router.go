@@ -211,17 +211,32 @@ func copyProxyRequestHeaders(req *http.Request, pReq *http.Request) {
 // Default ruleRoute HTTP handler.
 func defaultRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) (err error) {
 	st := time.Now()
+	pool := route.pool
+	var sessionId string
 
-	member := route.pool.getLeastBusy()
+	member, session := pool.getUpstreamTarget(r)
+	if session != nil {
+		member = session.pinned
+		sessionId = session.id
+	} else {
+		sessionId = "none"
+	}
 	pr, err := buildProxyRequest(r, member.nodeURI, route.targetURI)
+
 	if err == nil {
 		member.requestCnt++
-
-		//Do ProxyReq
 		resp, err := member.httpClient.Do(pr)
+		//fmt.Printf("Served with session:%v\n", session)
 
 		if err == nil {
 			if route.ValidRouteResponseStatus(resp.StatusCode) {
+				if pool.sticky {
+					if session == nil {
+						pool.createSession(resp, member)
+					} else {
+						pool.maintainSession(session)
+					}
+				}
 				defer r.Body.Close()
 				defer resp.Body.Close()
 				copyResponseHeaders(rw, resp)
@@ -234,7 +249,7 @@ func defaultRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) 
 				byteCnt, err := io.CopyBuffer(rw, resp.Body, make([]byte, 1024*64))
 
 				if err == nil {
-					fmt.Printf("\nRead :%v kb, from %v in %v", byteCnt/1024, pr.URL.String(), time.Since(st))
+					fmt.Printf("\nRead :%v kb from [host:session][%v:%v] in %v", byteCnt/1024, member.hostname, sessionId, time.Since(st))
 				}
 				return err
 			} else {

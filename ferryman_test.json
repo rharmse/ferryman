@@ -3,6 +3,7 @@
   "poolName": "TEST",
   "domain": "www.example.com",
   "ctxRoot": "",
+  "session" : { "affinity" : false, "identifier" : "", "type":  "none"},
   "serveOn": {"hostname":"localhost", "httpPort":8080, "httpsPort":443, "readTimeout":5, "writeTimeout":5, "idleTimeout":30},
   "upstreamCnctConf": {"maxCon":15, "maxIdleCon":10, "timeout":10, "keepaliveTime":30},
   "members" :
