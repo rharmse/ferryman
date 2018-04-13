@@ -16,6 +16,17 @@ type RuleConfig struct {
 	Regex   bool     `json:"regex"`
 }
 
+// Pair indicating what to replace for a given string
+type RewritePair struct {
+	Find    string `json:"find"`
+	Replace string `json:"replace"`
+}
+
+// Represents a Content Rewrite Pair
+type ContentRewrite struct {
+	Rewrites map[string][]*RewritePair
+}
+
 // Represents a upstream member configuration.
 type MemberConfig struct {
 	Hostname   string `json:"hostname"`

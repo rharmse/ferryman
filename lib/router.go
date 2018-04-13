@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/kellydunn/go-art"
@@ -213,14 +214,17 @@ func defaultRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) 
 	st := time.Now()
 	pool := route.pool
 	var sessionId string
+	var rewriteToggle bool = false
 
 	member, session := pool.getUpstreamTarget(r)
+
 	if session != nil {
 		member = session.pinned
 		sessionId = session.id
 	} else {
 		sessionId = "none"
 	}
+
 	pr, err := buildProxyRequest(r, member.nodeURI, route.targetURI)
 
 	if err == nil {
@@ -237,6 +241,12 @@ func defaultRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) 
 						pool.maintainSession(session)
 					}
 				}
+
+				isRewritable := false
+				if strings.Contains(resp.Header.Get("Content-Type"), "text/html") {
+					isRewritable = true
+				}
+
 				defer r.Body.Close()
 				defer resp.Body.Close()
 				copyResponseHeaders(rw, resp)
@@ -246,7 +256,19 @@ func defaultRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) 
 
 				//TODO potentially use bytecnt over time to adaptively size buffers according
 				//to response size, can be tracked from route
-				byteCnt, err := io.CopyBuffer(rw, resp.Body, make([]byte, 1024*64))
+
+				var byteCnt int64
+				var err error
+
+				if !isRewritable {
+					byteCnt, err = io.CopyBuffer(rw, resp.Body, make([]byte, 1024*64))
+				} else {
+					if rewriteToggle {
+						byteCnt, err = replaceBuffer(rw, resp.Body, "key", "value")
+					} else {
+						byteCnt, err = io.CopyBuffer(rw, resp.Body, make([]byte, 1024*64))
+					}
+				}
 
 				if err == nil {
 					fmt.Printf("\nRead :%v kb from [host:session][%v:%v] in %v", byteCnt/1024, member.hostname, sessionId, time.Since(st))

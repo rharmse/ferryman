@@ -13,6 +13,9 @@
     {"hostname":"localhost",  "port":8083,  "relCtxRoot": ""},
     {"hostname":"localhost",  "port":8084,  "relCtxRoot": "/v1"}
   ],
+  "contentRewrite": {
+    "pair": {"find":"tofind", "replace":"replacewith", "contentType":"text/html"}
+  },
   "rewriteRules":
   [
     { "fromURI": ["/path/to/forward/from1", "/path/to/forward/from2"], "toURI": "/path/to/forward/to", "regex":false},
