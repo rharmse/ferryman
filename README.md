@@ -21,11 +21,13 @@ It is currently in development as a pet project.
 
 Nothing to see here keep on moving.
 
-## Content consumed while learning
+## Content consumed while learning  
 * Datastructure Theory - ART(https://db.in.tum.de/~leis/papers/ART.pdf)
 * Datastructure Theory - Tree Comparison(http://daslab.seas.harvard.edu/classes/cs265/files/presentations/CS265_presentation_Sinyagin.pdf)
+* https://github.com/NYTimes/gziphandler
 
-## Other HTTP Routing/Proxy Projects scoured and their limitations
-* https://github.com/julienschmidt/httprouter, no: regex matching, reverse proxy, content rewrite
-* https://github.com/buaazp/fasthttprouter, no: regex matching, reverse proxy, content rewrites
-* https://github.com/containous/traefik, no: content rewrites
+## Other HTTP Routing/Proxy Projects
+* https://github.com/julienschmidt/httprouter
+* https://github.com/buaazp/fasthttprouter
+* https://github.com/containous/traefik
+* https://github.com/jellychen/loadbalancer
