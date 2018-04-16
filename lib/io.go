@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// Replacement buffer copy possibly inefficient
-func replaceBuffer(dst io.Writer, src io.Reader, find string, replace string) (written int64, err error) {
+// TODO Split/Merge find and replaces
+func rewriteContent(dst io.Writer, src io.Reader, sr map[string]string) (written int64, err error) {
 	var bBuff bytes.Buffer
 	var chunk []byte = make([]byte, 32*1024)
 
@@ -26,7 +26,10 @@ func replaceBuffer(dst io.Writer, src io.Reader, find string, replace string) (w
 	}
 
 	if err == nil {
-		replaced := strings.Replace(bBuff.String(), find, replace, -1)
+		var replaced string
+		for s, r := range sr {
+			replaced = strings.Replace(bBuff.String(), s, r, -1)
+		}
 		wrote, wErr := dst.Write([]byte(replaced))
 		if wErr == nil {
 			return int64(wrote), wErr

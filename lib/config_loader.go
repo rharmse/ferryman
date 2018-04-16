@@ -17,14 +17,10 @@ type RuleConfig struct {
 }
 
 // Pair indicating what to replace for a given string
-type RewritePair struct {
-	Find    string `json:"find"`
-	Replace string `json:"replace"`
-}
-
-// Represents a Content Rewrite Pair
-type ContentRewrite struct {
-	Rewrites map[string][]*RewritePair
+type RewritePairConfig struct {
+	Find        string `json:"find"`
+	Replace     string `json:"replace"`
+	ContentType string `json:"contentType"`
 }
 
 // Represents a upstream member configuration.
@@ -61,17 +57,18 @@ type SessionConfig struct {
 
 // Represents the pool configuration including rules, upstream members etc
 type PoolConfig struct {
-	PoolName       string            `json:"poolName"`
-	Domain         string            `json:"domain"`
-	CtxRoot        string            `json:"ctxRoot"`
-	Session        SessionConfig     `json:"session"`
-	ServeOn        HostConfig        `json:"serveOn"`
-	UpstrConProf   UpstreamConConfig `json:"upstreamCnctConf"`
-	Members        []MemberConfig    `json:"members"`
-	RewriteRules   []RuleConfig      `json:"rewriteRules"`
-	TempRedirRules []RuleConfig      `json:"tempRedirRules"`
-	PermRedirRules []RuleConfig      `json:"permRedirRules"`
-	DropRules      []RuleConfig      `json:"dropRules"`
+	PoolName       string              `json:"poolName"`
+	Domain         string              `json:"domain"`
+	CtxRoot        string              `json:"ctxRoot"`
+	Session        SessionConfig       `json:"session"`
+	ServeOn        HostConfig          `json:"serveOn"`
+	UpstrConProf   UpstreamConConfig   `json:"upstreamCnctConf"`
+	Members        []MemberConfig      `json:"members"`
+	ContentRewrite []RewritePairConfig `json:"contentRewrite"`
+	RewriteRules   []RuleConfig        `json:"rewriteRules"`
+	TempRedirRules []RuleConfig        `json:"tempRedirRules"`
+	PermRedirRules []RuleConfig        `json:"permRedirRules"`
+	DropRules      []RuleConfig        `json:"dropRules"`
 }
 
 // Represents multiple pool configurations

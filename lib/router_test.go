@@ -44,7 +44,7 @@ func TestInvValidRouteResponseStatus(t *testing.T) {
 	gotRoute := router.GetRoute(routePath, false)
 
 	if gotRoute == nil {
-		route, err := router.AddRoute(routePath, map[int]int{http.StatusOK: http.StatusOK}, ferryman.Default, nil, nil, nil)
+		route, err := router.AddRoute(routePath, routePath, map[int]int{http.StatusOK: http.StatusOK}, ferryman.Default, nil, nil, nil)
 
 		if err == nil && route != nil {
 			route = router.GetRoute(routePath, false)
@@ -80,10 +80,10 @@ func TestAddRoute(t *testing.T) {
 
 	}
 
-	route1, err1 := router.AddRoute(routePathDef, ferryman.StatusALLMap, ferryman.Default, defaultHandler, nil, fallbackHandler)
-	route2, err2 := router.AddRoute(routePathDefErr, ferryman.StatusALLMap, ferryman.Default, defaultHandler, errHandler, nil)
-	route3, err3 := router.AddRoute(routePathAll, ferryman.StatusALLMap, ferryman.Default, nil, errHandler, nil)
-	route4, err4 := router.AddRoute(routePathAll, ferryman.StatusALLMap, ferryman.Default, nil, nil, nil)
+	route1, err1 := router.AddRoute(routePathDef, routePathDef, ferryman.StatusALLMap, ferryman.Default, defaultHandler, nil, fallbackHandler)
+	route2, err2 := router.AddRoute(routePathDefErr, routePathDefErr, ferryman.StatusALLMap, ferryman.Default, defaultHandler, errHandler, nil)
+	route3, err3 := router.AddRoute(routePathAll, routePathAll, ferryman.StatusALLMap, ferryman.Default, nil, errHandler, nil)
+	route4, err4 := router.AddRoute(routePathAll, routePathAll, ferryman.StatusALLMap, ferryman.Default, nil, nil, nil)
 
 	if err1 != nil && route1 == nil {
 		t.Errorf("Route creation with specified default handler failed. %v", err1)

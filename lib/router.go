@@ -49,6 +49,7 @@ type Route struct {
 	apply                routeHandlerFunc
 	fallback             fallbackHandlerFunc
 	err                  errHandlerFunc
+	requestURI           string
 	targetURI            string
 	validRespStatusCodes map[int]int
 	pool                 *Pool
@@ -92,7 +93,7 @@ func (router *Router) LoadRoutes(conf []*RuleConfig, t routeRule) {
 }
 
 // Register a route with the the router
-func (router *Router) AddRoute(routePath string, allowedRespStati map[int]int, routeType routeRule, defaultH routeHandlerFunc, errorH errHandlerFunc, fallbackH fallbackHandlerFunc) (route *Route, err error) {
+func (router *Router) AddRoute(reqPath string, forwardPath string, allowedRespStati map[int]int, routeType routeRule, defaultH routeHandlerFunc, errorH errHandlerFunc, fallbackH fallbackHandlerFunc) (route *Route, err error) {
 	switch {
 	case defaultH == nil && errorH == nil:
 		route = &Route{
@@ -118,10 +119,15 @@ func (router *Router) AddRoute(routePath string, allowedRespStati map[int]int, r
 
 	route.routeType = routeType
 	route.pool = router.defaultPool
-	route.targetURI = routePath
+	route.requestURI = reqPath
+	if forwardPath != "" {
+		route.targetURI = forwardPath
+	} else {
+		route.targetURI = reqPath
+	}
 	route.validRespStatusCodes = allowedRespStati
 
-	router.routes.Insert([]byte(routePath), route)
+	router.routes.Insert([]byte(route.requestURI), route)
 	return route, nil
 }
 
@@ -148,11 +154,12 @@ func (router *Router) GetRoute(uriPath string, createDefault bool) (route *Route
 			route := &Route{
 				apply:                DefaultHandler,
 				routeType:            Default,
+				requestURI:           uriPath,
 				targetURI:            uriPath,
 				validRespStatusCodes: map[int]int{StatusALL: StatusALL},
 				pool:                 router.defaultPool,
 			}
-			router.routes.Insert([]byte(uriPath), route)
+			router.routes.Insert([]byte(route.requestURI), route)
 			return route
 		} else {
 			return nil
@@ -213,10 +220,13 @@ func copyProxyRequestHeaders(req *http.Request, pReq *http.Request) {
 func defaultRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) (err error) {
 	st := time.Now()
 	pool := route.pool
-	var sessionId string
-	var rewriteToggle bool = false
-
+	rewriteToggle := route.pool.contentRewrite != nil
+	isRewritable := false
 	member, session := pool.getUpstreamTarget(r)
+
+	var sessionId string
+	var rewriteMap map[string]string
+	var byteCnt int64
 
 	if session != nil {
 		member = session.pinned
@@ -242,32 +252,26 @@ func defaultRouteHandler(rw http.ResponseWriter, r *http.Request, route *Route) 
 					}
 				}
 
-				isRewritable := false
-				if strings.Contains(resp.Header.Get("Content-Type"), "text/html") {
-					isRewritable = true
-				}
-
 				defer r.Body.Close()
 				defer resp.Body.Close()
 				copyResponseHeaders(rw, resp)
 				rw.Header().Set("X-Ferried-In", time.Since(st).String())
-				//Triggers TTFB response write
 				rw.WriteHeader(resp.StatusCode)
 
-				//TODO potentially use bytecnt over time to adaptively size buffers according
-				//to response size, can be tracked from route
-
-				var byteCnt int64
-				var err error
+				if rewriteToggle {
+					for cntTypeKey, snr := range route.pool.contentRewrite {
+						if strings.Contains(resp.Header.Get("Content-Type"), cntTypeKey) {
+							isRewritable = true
+							rewriteMap = snr
+							break
+						}
+					}
+				}
 
 				if !isRewritable {
 					byteCnt, err = io.CopyBuffer(rw, resp.Body, make([]byte, 1024*64))
 				} else {
-					if rewriteToggle {
-						byteCnt, err = replaceBuffer(rw, resp.Body, "key", "value")
-					} else {
-						byteCnt, err = io.CopyBuffer(rw, resp.Body, make([]byte, 1024*64))
-					}
+					byteCnt, err = rewriteContent(rw, resp.Body, rewriteMap)
 				}
 
 				if err == nil {

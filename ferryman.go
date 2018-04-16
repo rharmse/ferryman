@@ -22,6 +22,7 @@ func main() {
 	fmt.Printf("\n%v", pools["TEST"].String())
 
 	router := ferryman.New(pools["TEST"])
+	//router.AddRoute("/", "/test/home", ferryman.StatusALLMap, ferryman.Default, nil, nil, nil)
 	//router
 	fmt.Println("Router up")
 
@@ -38,7 +39,10 @@ func main() {
 		WriteTimeout: 5 * time.Second,
 		Handler:      router}
 
-	listener, err := reuseport.Listen("tcp", "localhost:8080")
+	listener, err := reuseport.Listen("tcp", ":8080")
+	if err != nil {
+		panic(err)
+	}
 	defer listener.Close()
 	err = server.Serve(listener)
 
@@ -47,6 +51,6 @@ func main() {
 	err = server.Serve(listener)*/
 
 	if err != nil {
-		fmt.Printf("%v", err)
+		panic(err)
 	}
 }
